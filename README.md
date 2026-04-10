@@ -214,9 +214,6 @@ Adjust queue name and account in `nextflow.config`.
 ## Citation
 
 If you use `annovar-nf` in your research, please cite:
-
-> Daniyarov A. *annovar-nf*: A Nextflow pipeline for scalable multi-sample ANNOVAR variant annotation. *Journal of Open Source Software*, 2025.
-
 > Wang K, Li M, Hakonarson H. ANNOVAR: functional annotation of genetic variants from high-throughput sequencing data. *Nucleic Acids Research*. 2010;38(16):e164.
 
 ---

@@ -89,7 +89,7 @@ nextflow run main.nf \
     --genome     hg38 \
     --annovar_db  /data/PublicData/annovar_src/annovar_20190101/humandb \
     --annovar_src /data/PublicData/annovar_src/annovar_20190101 \
-    --threads    50 \
+    --threads    10 \
     --outdir     results/
 ```
 
@@ -97,8 +97,7 @@ nextflow run main.nf \
 
 ```csv
 sample,vcf
-EP001_21,/data/vcfs/EP001_21.hard-filtered.vcf
-EP002_22,/data/vcfs/EP002_22.hard-filtered.vcf
+test,/data/vcfs/test.vcf
 ```
 
 ```bash
@@ -107,7 +106,7 @@ nextflow run main.nf \
     --genome     hg38 \
     --annovar_db  /data/PublicData/annovar_src/annovar_20190101/humandb \
     --annovar_src /data/PublicData/annovar_src/annovar_20190101 \
-    --threads    50 \
+    --threads    10 \
     --outdir     results/
 ```
 
@@ -162,13 +161,13 @@ All hg38 databases (older versions) plus: `snp138`, `avsnp138`, `ESP6500`, `popf
 ```
 results/
 ├── annotated/
-│   └── EP001_21/
-│       ├── EP001_21.hg38_multianno.vcf
-│       ├── EP001_21.hg38_multianno.txt
-│       └── EP001_21.annovar.log
+│   └── test/
+│       ├── test.hg38_multianno.vcf
+│       ├── test.hg38_multianno.txt
+│       └── test.annovar.log
 ├── final/
-│   └── EP001_21/
-│       └── EP001_21.annotated.header.txt   ← main output for downstream analysis
+│   └── test/
+│       └── test.annotated.header.txt   ← main output for downstream analysis
 ├── summary/
 │   ├── annotation_summary.tsv
 │   └── annotation_summary.html
@@ -187,7 +186,7 @@ When using `--input` with a directory, sample names are derived automatically by
 
 | File name | Extracted sample |
 |-----------|-----------------|
-| `EP001_21.hard-filtered.vcf` | `EP001_21` |
+| `test.hard-filtered.vcf` | `test` |
 | `SAMPLE_001.FINAL.vcf` | `SAMPLE_001` |
 | `SAMPLE_002.filtered.vcf` | `SAMPLE_002` |
 
@@ -203,7 +202,7 @@ nextflow run main.nf \
     --genome hg38 \
     --annovar_db /data/PublicData/annovar_src/annovar_20190101/humandb \
     --annovar_src /data/PublicData/annovar_src/annovar_20190101 \
-    --threads 50 \
+    --threads 10 \
     --outdir results/ \
     -profile slurm
 ```

@@ -3,7 +3,7 @@
 **Scalable, reproducible ANNOVAR annotation of VCF/BCF files (hg19 / hg38) with Nextflow.**
 
 [![CI](https://github.com/assetdaniyarov/annovar-nf/actions/workflows/ci.yml/badge.svg)](https://github.com/assetdaniyarov/annovar-nf/actions/workflows/ci.yml)
-[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A525.04.0-23aa62.svg)](https://www.nextflow.io/)
+[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A526.04.0-23aa62.svg)](https://www.nextflow.io/)
 [![run with conda](https://img.shields.io/badge/run%20with-conda-3EB049?logo=anaconda)](https://docs.conda.io/)
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?logo=docker)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -107,7 +107,7 @@ input file(s) ─► PREPARE_VCF ──────► NORMALIZE_VCF ───�
 
 | Software | Version | Notes |
 |---|---|---|
-| [Nextflow](https://www.nextflow.io/) | ≥ 25.04 | Java 17+ |
+| [Nextflow](https://www.nextflow.io/) | ≥ 26.04 | Java 17+ |
 | [ANNOVAR](https://annovar.openbioinformatics.org/) | 2019Oct24 or later | licensed separately; not bundled |
 | bcftools / htslib, Perl, Python ≥ 3.10 | see [`environment.yml`](environment.yml) | provided automatically with `-profile conda`, `docker` or `singularity` |
 

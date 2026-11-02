@@ -44,6 +44,17 @@ order the records are read — how ANNOVAR batches the input. This is ANNOVAR's 
 chr1:148,541,475 (NBPF14), so with two layouts of the same whole genome a few `regsnp_fpr` values
 in the 1q21 segmental duplications can differ.
 
+**Mitochondrial variants.** ANNOVAR matches the chromosome name exactly (without `chr`), and its
+databases name the mitochondrion either `M` (gene models, dbNSFP, gnomAD) or `MT` (avsnp, PubMind,
+CADD, the ClinVar files ANNOVAR distributes), so `table_annovar.pl` leaves a `chrM` variant without
+the `MT`-named annotations, and an `MT` variant without the `M`-named ones. annovar-nf annotates
+every mitochondrial record under both names and fills the empty filter-database columns of the row
+from the second lookup (gene-based columns come from the record's own name; a value found under
+both names is kept as is). This applies to hg38 and to hg19 files whose mitochondrion is the rCRS
+sequence (16,569 bp, e.g. b37 `MT`); UCSC hg19 `chrM` is another sequence and is annotated under its
+own name only. The ClinVar database that `--mode update_db` builds lists mitochondrial records
+under both names.
+
 ### `<id>.<build>_multianno.vcf.gz` (+ `.tbi`, only with `--save_vcf`)
 
 The normalized input VCF with ANNOVAR annotations added to `INFO` (between `ANNOVAR_DATE` and

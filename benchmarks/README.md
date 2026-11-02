@@ -18,7 +18,7 @@ number of records. `-b` skips the baseline run.
 - **Data**: Genome in a Bottle HG002 small-variant calls, GRCh38, chromosomes 1–22
   ([`HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz`](https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/AshkenazimTrio/HG002_NA24385_son/NISTv4.2.1/GRCh38/)):
   4,048,331 records, 4,095,611 rows after splitting multi-allelic sites. The exome-sized input is
-  the same file restricted to the coding exons of refGene ±50 bp (52 Mb): 44,034 records,
+  the same file restricted to the coding exons of refGene ±50 bp (52 Mb): 44,024 records,
   44,205 rows.
 - **Protocol**: the hg38 protocol of [`conf/dragen.config`](../conf/dragen.config), 20 databases —
   refGene, knownGene, ensGene, avsnp151, 1000 Genomes ×5, COSMIC 70, ExAC, gnomAD 4.1 exome and

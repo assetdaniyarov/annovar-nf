@@ -60,6 +60,14 @@ process ANNOVAR_TABLE {
     if grep -q -v -m1 '^#' ${prefix}.input.vcf; then
         HAS_VARIANTS=true
 
+        # Mitochondrial records get a twin under the other name of the
+        # mitochondrion (chrM <-> MT): ANNOVAR matches names exactly, and its
+        # databases use both. format_annovar_table.py merges the twins back.
+        TWIN_ARG=''
+        if [ "\$(format_annovar_table.py mito-twins ${prefix}.input.vcf --genome ${build})" -gt 0 ]; then
+            TWIN_ARG='--mito-twins'
+        fi
+
         perl ${annovar_src}/table_annovar.pl \\
             ${prefix}.input.vcf \\
             ${annovar_db} \\
@@ -102,7 +110,7 @@ process ANNOVAR_TABLE {
             --qc-min-dp ${params.qc_min_dp} --qc-min-gq ${params.qc_min_gq} \\
             --qc-min-alt-reads ${params.qc_min_alt_reads} --qc-het-vaf ${params.qc_het_vaf} \\
             --qc-min-hom-vaf ${params.qc_min_hom_vaf} --family-max-samples ${params.family_max_samples} \\
-            ${vcf_args} \\
+            ${vcf_args} \$TWIN_ARG \\
         | bgzip --threads ${task.cpus} > ${prefix}.body.tsv.gz
 
         if [ "${save_vcf}" = "true" ]; then

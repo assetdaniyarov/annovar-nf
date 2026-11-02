@@ -29,15 +29,19 @@ Post-process an ANNOVAR `*_multianno.txt` table produced with
      low). Files with at most --family-max-samples samples also list every rare
      coding/splicing variant a sample carries, for the inheritance analysis.
      Per sample: the rare coding, P/LP and VUS records it carries.
+  5. With --mito-twins, merge the mitochondrial twin records that
+     `format_annovar_table.py mito-twins` added to the VCF before annotation
+     (chrM <-> MT, see MITO_TWIN_ID) into their originals and drop them.
 
 Only the first columns of each row are split, so very wide multi-sample rows
 (hundreds of genotype columns) are cheap to process; genotypes are parsed for
 listed variants only (rare coding variants: GT only).
 
 Usage:
+    format_annovar_table.py mito-twins chunk.input.vcf --genome hg38    # before ANNOVAR
     format_annovar_table.py --txt chunk.hg38_multianno.txt --vcf chunk.input.vcf \
         --header-out chunk.header.tsv --stats chunk.stats.json \
-        --sample S1 --chunk chr1_1 > chunk.body.tsv
+        --sample S1 --chunk chr1_1 [--mito-twins] > chunk.body.tsv
 """
 
 from __future__ import annotations
@@ -174,6 +178,16 @@ PROTEIN_ALTERING = {
 CODING_FUNC = {"exonic", "splicing", "exonic;splicing"}
 # Mitochondrial contig names (ANNOVAR Chr column / VCF CHROM).
 MITO = {"chrM", "chrMT", "M", "MT"}
+# ANNOVAR matches the chromosome name exactly (after dropping 'chr'): chrM variants miss the
+# databases that call the mitochondrion MT (avsnp, PubMind, CADD, ANNOVAR's own ClinVar files)
+# and MT variants miss those that call it M. Every mitochondrial record therefore gets a twin
+# under the other name before annotation; the twin's filter annotations then fill the empty
+# ones of the original row and the twin is dropped.
+MITO_TWIN_ID = "annovar_nf_mito_twin"
+MITO_TWIN_NAME = {"chrM": "chrMT", "chrMT": "chrM", "M": "MT", "MT": "M"}
+RCRS_LENGTH = 16569
+# Gene-based ANNOVAR columns: the twin's are meaningless (no genes on the other name).
+GENE_BASED_RE = re.compile(r"^(Func|Gene|GeneDetail|ExonicFunc|AAChange)[._]")
 RARE_AF = 0.01
 MAX_LISTED_PER_CHUNK = 2000
 INTERVAR_PLP = {"pathogenic", "likely pathogenic"}
@@ -519,6 +533,115 @@ class Stats:
                 "qc": asdict(self.qc), "plp": self.plp, "vus": self.vus, "rare": self.rare}
 
 
+def add_mito_twins(vcf_path: str, genome: str) -> int:
+    """
+    Append to the plain VCF given to ANNOVAR a twin of every mitochondrial record, under the
+    other name of the mitochondrion (MITO_TWIN_NAME) and with the ID MITO_TWIN_ID. Only for the
+    rCRS sequence the MT-named databases use: hg38's chrM, or a declared 16,569 bp mitochondrion
+    (b37 'MT', or a header without the length for an MT-named one). UCSC hg19 chrM (16,571 bp)
+    is a different sequence. Returns the number of twins.
+    """
+    lengths: dict[str, int] = {}
+    twins: list[tuple[str, str]] = []
+    last = "\n"
+    with open(vcf_path, encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            last = line
+            if line.startswith("##contig="):
+                name, size = re.search(r"[<,]ID=([^,>]+)", line), re.search(r"[<,]length=(\d+)", line)
+                if name and size:
+                    lengths[name.group(1)] = int(size.group(1))
+                continue
+            if line.startswith("#"):
+                continue
+            chrom, pos, _id, rest = line.split("\t", 3)
+            if chrom in MITO_TWIN_NAME:
+                twins.append((chrom, "\t".join([MITO_TWIN_NAME[chrom], pos, MITO_TWIN_ID, rest])))
+
+    def rcrs(chrom: str) -> bool:
+        if genome == "hg38" or lengths.get(chrom) == RCRS_LENGTH:
+            return True
+        return chrom in ("MT", "chrMT") and chrom not in lengths
+
+    lines = [t if t.endswith("\n") else t + "\n" for c, t in twins if rcrs(c)]
+    if lines:
+        with open(vcf_path, "a", encoding="utf-8") as fh:
+            if not last.endswith("\n"):
+                fh.write("\n")
+            fh.writelines(lines)
+    return len(lines)
+
+
+def twin_merge_columns(txt_header: list[str]) -> list[int]:
+    """ANNOVAR annotation columns a twin may fill: not Chr..Alt, not gene-based, not Otherinfo."""
+    n_anno = next((i for i, c in enumerate(txt_header) if c.startswith("Otherinfo")), len(txt_header))
+    return [i for i in range(5, n_anno) if not GENE_BASED_RE.match(txt_header[i])]
+
+
+def read_twin_rows(txt_path: str, n_cols: int) -> dict[tuple[str, str, str], list[str]]:
+    """Annotation columns of the twin rows of an ANNOVAR table, by (Start, Ref, Alt)."""
+    tag = f"\t{MITO_TWIN_ID}\t"
+    twins: dict[tuple[str, str, str], list[str]] = {}
+    with open_text(txt_path) as fh:
+        next(fh, None)
+        for line in fh:
+            if tag in line:
+                f = line.split("\t", n_cols)
+                twins[(f[1], f[3], f[4])] = f[:n_cols]
+    return twins
+
+
+def fill_from_twin(line: str, twins: dict, cols: list[int]) -> str:
+    """Fill the empty ('.') filter annotations of a mitochondrial row from its twin."""
+    f = line.rstrip("\n").split("\t")
+    twin = twins.get((f[1], f[3], f[4]))
+    if twin is None:
+        return line
+    for i in cols:
+        if f[i] == "." and twin[i] != ".":
+            f[i] = twin[i]
+    return "\t".join(f) + "\n"
+
+
+def vcf_twin_info(vcf_path: str) -> dict[tuple[str, str, str], dict[str, str]]:
+    """INFO of the twin records of ANNOVAR's *_multianno.vcf, by (POS, REF, ALT)."""
+    twins = {}
+    with open_text(vcf_path) as fh:
+        for line in fh:
+            if line.startswith("#"):
+                continue
+            f = line.split("\t", 8)
+            if f[2] == MITO_TWIN_ID:
+                twins[(f[1], f[3], f[4])] = dict(kv.split("=", 1) for kv in f[7].split(";") if "=" in kv)
+    return twins
+
+
+def vcf_fill_from_twin(line: str, twins: dict) -> str:
+    """Fill the empty ('.') non-gene ANNOVAR INFO values of a mitochondrial record from its twin."""
+    f = line.split("\t", 8)
+    twin = twins.get((f[1], f[3], f[4]))
+    if twin is None:
+        return line
+    info = []
+    for kv in f[7].split(";"):
+        key, sep, value = kv.partition("=")
+        if sep and value == "." and not GENE_BASED_RE.match(key) and twin.get(key, ".") != ".":
+            kv = f"{key}={twin[key]}"
+        info.append(kv)
+    f[7] = ";".join(info)
+    return "\t".join(f)
+
+
+def mito_twins_main(argv: list[str]) -> int:
+    p = argparse.ArgumentParser(prog="format_annovar_table.py mito-twins",
+                                description="Append mitochondrial twin records to a plain VCF (see add_mito_twins).")
+    p.add_argument("vcf", help="plain VCF given to ANNOVAR, appended in place")
+    p.add_argument("--genome", required=True, help="genome build (hg19 / hg38)")
+    args = p.parse_args(argv)
+    print(add_mito_twins(args.vcf, args.genome))
+    return 0
+
+
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--txt", required=True, help="ANNOVAR *_multianno.txt ('-' for STDIN)")
@@ -532,6 +655,8 @@ def parse_args(argv=None):
     p.add_argument("--n-samples", type=int, default=None, help="number of genotype columns (stats only)")
     p.add_argument("--annovar-vcf", help="ANNOVAR *_multianno.vcf to write with the same gene separator")
     p.add_argument("--vcf-out", help="output for --annovar-vcf (plain VCF)")
+    p.add_argument("--mito-twins", action="store_true",
+                   help="the VCF has mitochondrial twin records (mito-twins): merge and drop them")
     d = Qc()
     p.add_argument("--qc-min-dp", type=int, default=d.min_dp, help="LOW_DP below this read depth")
     p.add_argument("--qc-min-gq", type=int, default=d.min_gq, help="LOW_GQ below this genotype quality")
@@ -555,6 +680,9 @@ def parse_args(argv=None):
 
 
 def main(argv=None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    if argv and argv[0] == "mito-twins":
+        return mito_twins_main(argv[1:])
     args = parse_args(argv)
     vcf_cols = read_vcf_columns(args.vcf)
 
@@ -562,6 +690,9 @@ def main(argv=None) -> int:
     header: list[str] | None = None
     stats: Stats | None = None
     gene_cols: list[int] = []
+    twins: dict = {}
+    twin_cols: list[int] = []
+    twin_tag = f"\t{MITO_TWIN_ID}\t"
     src = open_text(args.txt)
     out = open_text(args.out, "w")
     try:
@@ -571,7 +702,15 @@ def main(argv=None) -> int:
                 if not line.strip():
                     continue
                 txt_header = line.rstrip("\r\n").split("\t")
+                if args.mito_twins:
+                    twin_cols = twin_merge_columns(txt_header)
+                    twins = read_twin_rows(args.txt, max(twin_cols, default=4) + 1)
                 continue
+            if args.mito_twins:
+                if twin_tag in line:
+                    continue
+                if line.split("\t", 1)[0] in MITO:
+                    line = fill_from_twin(line, twins, twin_cols)
             if header is None:
                 n_data_cols = line.count("\t") + 1
                 header = build_header(txt_header, vcf_cols, n_data_cols)
@@ -597,8 +736,14 @@ def main(argv=None) -> int:
             fh.write("\t".join(header) + "\n")
 
     if args.annovar_vcf:
+        vcf_twins = vcf_twin_info(args.annovar_vcf) if args.mito_twins else {}
         with open_text(args.annovar_vcf) as vin, open(args.vcf_out, "w", encoding="utf-8") as vout:
             for line in vin:
+                if args.mito_twins and not line.startswith("#"):
+                    if twin_tag in line:
+                        continue
+                    if line.split("\t", 1)[0] in MITO:
+                        line = vcf_fill_from_twin(line, vcf_twins)
                 vout.write(vcf_gene_separator(line))
 
     if args.stats:

@@ -2,7 +2,7 @@
 # ANNOVAR is licensed and NOT included: pass --annovar_src/--annovar_db,
 # Nextflow mounts them into the container automatically.
 #
-#   docker build -t ghcr.io/assetdaniyarov/annovar-nf:0.1.0 .
+#   docker build -t ghcr.io/assetdaniyarov/annovar-nf:0.1.1 .
 FROM mambaorg/micromamba:1.5.10
 
 LABEL org.opencontainers.image.title="annovar-nf" \

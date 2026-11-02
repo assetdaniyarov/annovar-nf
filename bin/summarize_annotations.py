@@ -66,9 +66,9 @@ TOTAL_COLUMNS = ("genome", "n_genotype_columns", "total", "snv", "indel", "mnv",
                  "vus_candidates", "revel_ge_0.75", "cadd_phred_ge_20")
 # Listed variants, one TSV row per variant and carrier sample (file = input-file id, sample = VCF sample).
 GENOTYPE_COLUMNS = ("zygosity", "vaf", "dp", "gq", "alt_reads", "flags", "confidence", "inheritance")
-VARIANT_COLUMNS = ("gene", "vcf", "chr", "start", "ref", "alt", "func", "exonic", "aachange", "transcript", "hgvs_c",
-                   "hgvs_p", "carriers", "filter", "clnsig", "stars", "clnrevstat", "clndn", "clnalleleid", "intervar",
-                   "acmg", "gnomad_af", "revel", "cadd", "alphamissense", "splice", "pubmind", "pubmind_score",
+VARIANT_COLUMNS = ("gene", "vcf", "rsid", "chr", "start", "ref", "alt", "func", "exonic", "aachange", "transcript",
+                   "hgvs_c", "hgvs_p", "carriers", "filter", "clnsig", "stars", "clnrevstat", "clndn", "clnalleleid",
+                   "intervar", "acmg", "gnomad_af", "revel", "cadd", "alphamissense", "splice", "pubmind", "pubmind_score",
                    "pubmind_confidence", "pubmind_pvid", "gene_moi", "gene_diseases", "loeuf", "panels")
 PLP_COLUMNS = ("file", "sample", "source", *GENOTYPE_COLUMNS, *VARIANT_COLUMNS)
 VUS_COLUMNS = ("file", "sample", "kind", *GENOTYPE_COLUMNS, *VARIANT_COLUMNS)
@@ -644,12 +644,25 @@ def pubmind_cell(v: dict) -> str:
     return (f"<td>{sig_badge(label, title)}<div class='muted small' title='{esc(title)}'>{esc(detail)}</div></td>")
 
 
+def rsids(v: dict) -> list[str]:
+    """dbSNP rsIDs of a listed variant (stats written before the rsid field have none)."""
+    return [x for x in (v.get("rsid") or "").split(";") if re.fullmatch(r"rs\d+", x)]
+
+
+def rsid_html(v: dict) -> str:
+    """The rsIDs, linked to dbSNP, for the line under a variant's change."""
+    return "".join(f" · <a href='https://www.ncbi.nlm.nih.gov/snp/{r}' target='_blank' rel='noopener'>{r}</a>"
+                   for r in rsids(v))
+
+
 def variant_links(v: dict, genome: str) -> list[list[str]]:
     """[label, url] of the pages about a variant (VCF coordinates) and its gene, for the link menu.
     IGV: the locus in a running IGV desktop (batch port 60151)."""
     out = []
     if v.get("clnalleleid") not in (None, ".", ""):
         out.append(["ClinVar", f"https://www.ncbi.nlm.nih.gov/clinvar/?term={v['clnalleleid']}[alleleid]"])
+    if rsids(v):
+        out.append(["dbSNP", f"https://www.ncbi.nlm.nih.gov/snp/{rsids(v)[0]}"])
     parts = (v.get("vcf") or "").split("-")
     if len(parts) == 4 and "." not in parts and genome in ("hg19", "hg38"):
         vcf_chrom, pos, ref, alt = parts
@@ -973,8 +986,8 @@ def variant_table(variants: list[dict], table_id: str, kind: str, view: View) ->
             + f"<td>{lead}</td>"
             + gene_cell(v, view)
             + f"<td><div class='mono' title='{esc(tx_title or main)}'>{esc(main)}</div>"
-              f"<div class='muted small' title='{esc(' · '.join(where + [f'FILTER {filt}']))}'>{filter_chip}"
-              f"{esc(' · '.join(where))}</div></td>"
+              f"<div class='muted small' title='{esc(' · '.join(where + rsids(v) + [f'FILTER {filt}']))}'>"
+              f"{filter_chip}{esc(' · '.join(where))}{rsid_html(v)}</div></td>"
             + genotype_cells(v, view)
             + f"<td>{sig_badge(v.get('clnsig', '.'))}<div class='stars' title='{esc(v.get('clnrevstat', ''))}'>"
               f"{stars}</div></td>"

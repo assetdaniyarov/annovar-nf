@@ -318,7 +318,7 @@
                 },
                 "container": {
                     "type": "string",
-                    "default": "ghcr.io/assetdaniyarov/annovar-nf:0.1.0",
+                    "default": "ghcr.io/assetdaniyarov/annovar-nf:0.1.1",
                     "description": "Runtime image for -profile docker / singularity / apptainer (ANNOVAR is mounted, not bundled)."
                 },
                 "help": {

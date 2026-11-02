@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2026-11-02
+
+### Added
+- dbSNP rsID of every listed variant: in the report under the change, linked to dbSNP, in the
+  gene link menu, and as `rsid` in the TSV and JSON reports (from the protocol's `avsnp` database,
+  else the VCF `ID` column).
+
+### Fixed
+- Mitochondrial variants are annotated by every filter database whatever name it uses for the
+  mitochondrion (`M` or `MT`): `chrM` variants get dbSNP, PubMind, CADD and the ClinVar files
+  distributed by ANNOVAR, which list it as `MT` (hg38, and hg19 files with the rCRS sequence).
+
 ## [0.1.0] - 2026-11-01
 
 ### Added

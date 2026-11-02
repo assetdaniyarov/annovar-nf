@@ -204,15 +204,18 @@ such records with FILTER `TargetedWT` / `TargetedLowVQL` — are counted
 | VUS | ClinVar `Uncertain_significance` and `Conflicting_classifications_of_pathogenicity`, exonic or splicing, gnomAD frequency below 1 % in every population (or absent) |
 
 Columns of the HTML tables: source (P/LP) and inheritance model; gene (see Gene information
-below); HGVS change, consequence, transcript and VCF coordinates (a non-PASS FILTER highlighted);
+below); HGVS change, consequence, transcript, VCF coordinates and the dbSNP rsID linked to dbSNP (a
+non-PASS FILTER highlighted);
 genotype calls (see Report layout and Genotype quality); ClinVar significance with review stars
 (0–4); condition (ClinVar), with the GenCC diseases of the gene below it; InterVar call with the triggered ACMG criteria; PubMind (hg38, when
 `pubmind_db_*` is in the protocol): the pathogenicity reported in the literature, the paper-level
 score (0 benign, 1 pathogenic) and the evidence confidence (0–3), with the PubMind variant ids in
 the tooltip; highest gnomAD frequency (overall and population maximum, exome and genome); REVEL;
-CADD phred; AlphaMissense (with dbNSFP). The TSV files also hold FILTER, dbscSNV ADA (hg19) and
-`pubmind`, `pubmind_score`, `pubmind_confidence`, `pubmind_pvid`. The scores are taken from the
-protocol databases and are `.` when a database is not used.
+CADD phred; AlphaMissense (with dbNSFP). The TSV files also hold `rsid`, FILTER, dbscSNV ADA (hg19)
+and `pubmind`, `pubmind_score`, `pubmind_confidence`, `pubmind_pvid`. The scores are taken from the
+protocol databases and are `.` when a database is not used. The rsID comes from the dbSNP database
+of the protocol (`avsnp151`, matched per alternate allele), else from the VCF `ID` column when it
+holds rsIDs.
 
 PubMind is extracted from papers by a language model: it points to the literature on a variant and
 does not classify it. The P/LP list stays ClinVar and InterVar only. In the GIAB HG002 genome, 16
@@ -239,7 +242,7 @@ the loss-of-function constraint of gnomAD v4.1.
   AR, SD; X-linked hemizygous: X-linked) and struck through in red when they do not, e.g. a de
   novo variant in a gene known only for recessive disease. Within a model, fitting candidates come
   first, then those of genes without GenCC data, then the others.
-- **Links**: clicking a gene name opens a menu with the variant in ClinVar, gnomAD,
+- **Links**: clicking a gene name opens a menu with the variant in ClinVar, dbSNP, gnomAD,
   [Franklin](https://franklin.genoox.com/) and [VarSome](https://varsome.com/) (VCF coordinates of
   the file's build), the gene in OMIM and GenCC, and **IGV**: the locus in an IGV desktop running on
   the same computer (View > Preferences > Advanced > Enable port 60151, the default).

@@ -356,6 +356,9 @@ class Stats:
             "clnrevstat": find_column(header, ("CLNREVSTAT",), r"clnrevstat"),
             "clndn": find_column(header, ("CLNDN",), r"^clndn$"),
             "clnalleleid": find_column(header, ("CLNALLELEID", "ALLELEID")),
+            # dbSNP (avsnp151, avsnp150, snp138, ...): the rsID of the allele.
+            "dbsnp": find_column(header, (), r"^(avsnp|snp)\d+$"),
+            "vcf_id": exact("ID"),
             "intervar": exact("InterVar_automated"),
             "revel": find_column(header, ("REVEL", "REVEL_score"), r"^revel"),
             "cadd": find_column(header, ("CADD_phred", "CADD13_PHRED", "CADD_PHRED"), r"^cadd.*phred$"),
@@ -426,6 +429,14 @@ class Stats:
                 out.append(name)
         return out
 
+    def rsid(self, f: list[str]) -> str:
+        """rsID of the allele: the dbSNP database of the protocol, else the VCF ID column."""
+        for key in ("dbsnp", "vcf_id"):
+            ids = [x for x in re.split(r"[;,]", self.col(f, key)) if re.fullmatch(r"rs\d+", x)]
+            if ids:
+                return ";".join(ids)
+        return "."
+
     def record(self, f: list[str], gt: dict, af: float | None) -> dict:
         """One listed variant with the fields the report shows."""
         acmg = [name for i, name in self.acmg if i < len(f) and f[i] == "1"]
@@ -444,6 +455,7 @@ class Stats:
             # Every condition ('|'-separated), in full: the report shows it on hover.
             "clndn": shorten(self.col(f, "clndn").replace("\\x2c", ",").replace("_", " "), 2000),
             "clnalleleid": self.col(f, "clnalleleid"),
+            "rsid": self.rsid(f),
             "intervar": self.col(f, "intervar"), "acmg": ",".join(acmg) or ".",
             "gnomad_af": f"{af:.3g}" if af is not None else ".",
             "revel": self.col(f, "revel"), "cadd": self.col(f, "cadd"),

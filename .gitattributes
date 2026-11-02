@@ -1,0 +1,9 @@
+# Unix line endings everywhere: the pipeline runs on Linux even when the
+# repository is edited on Windows (CRLF breaks shebangs and bash scripts).
+* text=auto eol=lf
+
+*.vcf.gz binary
+*.tbi    binary
+*.csi    binary
+*.bcf    binary
+*.png    binary

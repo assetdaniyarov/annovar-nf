@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python unit tests and lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest ruff==0.17.3
+      - run: ruff check
+      - run: pytest
+
+  nextflow-lint:
+    name: Nextflow lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: nf-core/setup-nextflow@v2
+        with:
+          version: "25.04.8"
+      - run: nextflow lint .
+
+  pipeline:
+    name: End-to-end test (${{ matrix.profile }}, Nextflow ${{ matrix.nxf }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        nxf: ["25.04.8", "latest-stable"]
+        profile: ["test,conda"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: nf-core/setup-nextflow@v2
+        with:
+          version: ${{ matrix.nxf }}
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          auto-activate-base: true
+      - name: Run pipeline with the mock ANNOVAR
+        shell: bash -el {0}
+        run: nextflow run main.nf -profile ${{ matrix.profile }} --outdir results_test
+      - name: Check outputs
+        shell: bash -el {0}
+        run: |
+          set -euo pipefail
+          for id in single_hg38 cohort_hg19 nochr_unsorted lifted_hg38 sites_only; do
+            ls results_test/annotation/${id}/${id}.hg*_multianno.txt.gz
+            test -s results_test/summary/${id}.annotation_summary.html
+          done
+          # no VCF, logs or build reports unless asked for
+          test -z "$(find results_test/annotation -name '*.vcf.gz*' -o -name logs)"
+          test ! -e results_test/pipeline_info/build_detection
+          # every annotated row must have as many columns as the header
+          for f in results_test/annotation/*/*_multianno.txt.gz; do
+            gzip -dc "$f" | awk -F'\t' 'NR==1{n=NF} NF!=n{print FILENAME": bad row "NR; exit 1}'
+          done
+          test "$(gzip -dc results_test/annotation/single_hg38/single_hg38.hg38_multianno.txt.gz | tail -n +2 | wc -l)" -eq 11
+          # build detected from ##contig lengths, reported in the per-file HTML
+          tr '\n' ' ' < results_test/summary/nochr_unsorted.annotation_summary.html \
+            | grep -q "badge'>hg19</span></td><td>##contig lengths"
+          test -s results_test/summary/annotation_summary.html
+          grep -q '"ANNOVAR databases (hg38)":' results_test/pipeline_info/software_versions.yml
+          # PubMind column in hg38 reports only
+          grep -q '>PubMind</span></th>' results_test/summary/single_hg38.annotation_summary.html
+          test "$(grep -c '>PubMind</span></th>' results_test/summary/cohort_hg19.annotation_summary.html)" -eq 0
+          # gene information (test gene table in the mock humandb) and the test gene panel
+          grep -q 'GenCC: Test syndrome 2 (AR) +1' results_test/summary/cohort_hg19.annotation_summary.html
+          test "$(grep -c 'in the gene panel)</h2>' results_test/summary/cohort_hg19.annotation_summary.html)" -eq 3
+          grep -q $'\tAR\tTest syndrome 2 (AR, Strong); Test syndrome 2b (AD, Limited)\t0.85\tpanel$' \
+            results_test/summary/cohort_hg19.annotation_summary_plp.tsv
+          # per-sample QC, PED data, inheritance analysis and the machine-readable report
+          for s in _samples.tsv _candidates.tsv .json; do test -s results_test/summary/cohort_hg19.annotation_summary$s; done
+          grep -q $'\tS1\tFAM1\tS3\tS2\tmale\taffected\t' results_test/summary/cohort_hg19.annotation_summary_samples.tsv
+          python3 -c "import json,sys; r=json.load(open(sys.argv[1])); assert r['schema']=='annovar-nf.report' and r['input_file']['samples']==['S1','S2','S3']" \
+            results_test/summary/cohort_hg19.annotation_summary.json
+      - name: Annotated VCF (--save_vcf)
+        shell: bash -el {0}
+        run: |
+          set -euo pipefail
+          nextflow run main.nf -profile ${{ matrix.profile }} --outdir results_test --save_vcf -resume
+          for id in single_hg38 cohort_hg19 nochr_unsorted lifted_hg38 sites_only; do
+            ls results_test/annotation/${id}/${id}.hg*_multianno.vcf.gz.tbi
+          done
+      - name: Stub run
+        shell: bash -el {0}
+        run: nextflow run main.nf -profile test -stub --outdir results_stub
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-${{ strategy.job-index }}
+          path: |
+            results_test/pipeline_info
+            results_test/summary
+            .nextflow.log
+
+  docker:
+    name: End-to-end test in the Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the runtime image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: annovar-nf:ci
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: nf-core/setup-nextflow@v2
+        with:
+          version: "25.04.8"
+      - name: Run pipeline with the mock ANNOVAR in the image
+        run: nextflow run main.nf -profile test,docker --container annovar-nf:ci --outdir results_docker
+      - name: Check outputs
+        run: |
+          set -euo pipefail
+          for id in single_hg38 cohort_hg19 nochr_unsorted lifted_hg38 sites_only; do
+            ls results_docker/annotation/${id}/${id}.hg*_multianno.txt.gz
+            test -s results_docker/summary/${id}.annotation_summary.html
+          done
+          # tools the processes call, Perl with threads (ANNOVAR --thread)
+          docker run --rm annovar-nf:ci bash -c 'bcftools --version | head -n 1; python3 --version; pgrep --version; perl -Mthreads -e 1 && echo "perl threads: ok"'

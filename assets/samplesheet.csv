@@ -1,0 +1,6 @@
+sample,vcf,genome
+HG002,/data/vcfs/HG002.hard-filtered.vcf.gz,
+HG003,/data/vcfs/HG003.hard-filtered.vcf,hg38
+cohort_wes,/data/cohorts/cohort_wes_hg19_dragen.vcf,hg19
+panel_lift,/data/cohorts/panel_dragen_hg38_lift.vcf.gz,auto
+cohort_wgs,/data/cohorts/cohort_hg19_v10_genome_dragen.vcf.gz,

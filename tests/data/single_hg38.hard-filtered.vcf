@@ -1,0 +1,25 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=LowQual,Description="Low quality">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele frequency">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Depth">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Depth">
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##contig=<ID=chrX,length=156040895>
+##contig=<ID=chrUn_KI270742v1,length=186739>
+##reference=file:///ref/hg38/hg38.fa
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+chr1	69270	.	A	G	50	PASS	AC=1;AF=0.5;DP=30	GT:AD:DP	0/1:15,15:30
+chr1	925952	.	G	A,T	50	PASS	AC=1,1;AF=0.5,0.5;DP=40	GT:AD:DP	1/2:0,20,20:40
+chr1	930000	.	CAG	C	50	PASS	AC=1;AF=0.5;DP=22	GT:AD:DP	0/1:11,11:22
+chr1	930001	.	A	*,G	50	PASS	AC=1,1;AF=0.5,0.5;DP=20	GT:AD:DP	1/2:0,10,10:20
+chr1	935000	.	T	TAAA	50	LowQual	AC=2;AF=1;DP=8	GT:AD:DP	1/1:0,8:8
+chr1	940000	.	G	<NON_REF>	50	PASS	DP=12	GT:AD:DP	0/0:12,0:12
+chr2	100000	.	C	T	50	PASS	AC=1;AF=0.5;DP=33	GT:AD:DP	0/1:16,17:33
+chr2	200000	.	G	GC,GCC	50	PASS	AC=1,1;AF=0.5,0.5;DP=31	GT:AD:DP	1/2:1,15,15:31
+chrX	300000	.	A	G	50	PASS	AC=2;AF=1;DP=25	GT:AD:DP	1/1:0,25:25
+chrUn_KI270742v1	5000	.	T	C	50	PASS	AC=1;AF=0.5;DP=19	GT:AD:DP	0/1:9,10:19

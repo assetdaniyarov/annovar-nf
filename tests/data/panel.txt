@@ -1,0 +1,3 @@
+# Test gene panel: GENE2 under its previous symbol
+GENE0
+OLDGENE2

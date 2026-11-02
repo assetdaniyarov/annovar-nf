@@ -1,0 +1,353 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/assetdaniyarov/annovar-nf/main/nextflow_schema.json",
+    "title": "annovar-nf parameters",
+    "description": "Scalable, reproducible ANNOVAR annotation of VCF/BCF files (hg19 / hg38) with Nextflow",
+    "type": "object",
+    "$defs": {
+        "input_output_options": {
+            "title": "Input / output",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "required": ["outdir"],
+            "properties": {
+                "input": {
+                    "type": "string",
+                    "format": "path",
+                    "description": "A VCF/BCF file, a directory of them, a glob, or a samplesheet (.csv/.tsv: id, vcf[, index][, genome]).",
+                    "help_text": "Accepted: .vcf, .vcf.gz (BGZF or plain gzip), .vcf.bgz, .gvcf.gz, .bcf; indexed or not; sorted or not; single- or multi-sample. Required with --mode annotate.",
+                    "fa_icon": "fas fa-file-code"
+                },
+                "input_pattern": {
+                    "type": "string",
+                    "default": "*.{vcf,vcf.gz,vcf.bgz,gvcf.gz,bcf}",
+                    "description": "File pattern used when --input is a directory."
+                },
+                "recursive": {
+                    "type": "boolean",
+                    "description": "Also search sub-directories of an --input directory."
+                },
+                "outdir": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "default": "./results",
+                    "description": "Output directory.",
+                    "fa_icon": "fas fa-folder-open"
+                },
+                "publish_dir_mode": {
+                    "type": "string",
+                    "default": "copy",
+                    "enum": ["symlink", "rellink", "link", "copy", "copyNoFollow", "move"],
+                    "description": "How result files are written to --outdir.",
+                    "hidden": true
+                }
+            }
+        },
+        "genome_options": {
+            "title": "Genome build",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "properties": {
+                "genome": {
+                    "type": "string",
+                    "default": "auto",
+                    "enum": ["auto", "hg19", "hg38", "GRCh37", "GRCh38", "grch37", "grch38", "b37", "hs37d5", "hs38dh"],
+                    "description": "Genome build of the input: auto detects it per file from ##contig lengths, header hints and the file name."
+                },
+                "skip_build_check": {
+                    "type": "boolean",
+                    "description": "Use the given --genome even when the file says otherwise (not recommended)."
+                }
+            }
+        },
+        "annovar_options": {
+            "title": "ANNOVAR",
+            "type": "object",
+            "fa_icon": "fas fa-cogs",
+            "properties": {
+                "annovar_src": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Directory containing table_annovar.pl (ANNOVAR is licensed separately and not bundled)."
+                },
+                "annovar_db": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "ANNOVAR humandb directory."
+                },
+                "protocol": {
+                    "type": "string",
+                    "description": "Comma-separated ANNOVAR protocol overriding the per-build defaults (conf/annovar_protocols.config)."
+                },
+                "operation": {
+                    "type": "string",
+                    "pattern": "^(g|gx|r|f)(,(g|gx|r|f))*$",
+                    "description": "Operations matching --protocol (g,f,r,gx); inferred from --protocol when omitted."
+                },
+                "annovar_protocols": {
+                    "type": "object",
+                    "description": "Per-build default protocols as ['database:operation', ...] lists (set in a config file).",
+                    "hidden": true
+                },
+                "onetranscript": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Report one transcript per gene."
+                },
+                "annovar_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Extra arguments appended to table_annovar.pl."
+                },
+                "threads": {
+                    "type": "integer",
+                    "default": 8,
+                    "minimum": 1,
+                    "description": "CPUs for ANNOVAR per input file: the file is split into one chunk per CPU, each annotated by its own ANNOVAR process.",
+                    "fa_icon": "fas fa-microchip"
+                },
+                "skip_db_check": {
+                    "type": "boolean",
+                    "description": "Do not verify before annotation that every database file exists."
+                },
+                "auto_install_db": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Install the protocol databases that are not installed yet before annotating: ANNOVAR packages (verified, atomic) and ClinVar from NCBI. Installed databases are left as they are.",
+                    "fa_icon": "fas fa-download"
+                }
+            }
+        },
+        "database_options": {
+            "title": "Database maintenance",
+            "type": "object",
+            "fa_icon": "fas fa-database",
+            "properties": {
+                "mode": {
+                    "type": "string",
+                    "default": "annotate",
+                    "enum": ["annotate", "check_db", "update_db"],
+                    "description": "annotate, check_db (read-only audit of every protocol database) or update_db (install missing or damaged databases, build the newest ClinVar)."
+                },
+                "db_builds": {
+                    "type": "string",
+                    "pattern": "^(hg19|hg38)(,(hg19|hg38))*$",
+                    "description": "Builds to check or update, comma-separated (default: every build with a protocol)."
+                },
+                "clinvar_release": {
+                    "type": "string",
+                    "default": "latest",
+                    "pattern": "^(latest|[0-9]{8})$",
+                    "description": "ClinVar release built for 'clinvar_latest': latest or YYYYMMDD."
+                },
+                "db_download_forks": {
+                    "type": "integer",
+                    "default": 2,
+                    "minimum": 1,
+                    "description": "Parallel database downloads."
+                },
+                "db_offline": {
+                    "type": "boolean",
+                    "description": "Audit databases without contacting ANNOVAR or NCBI."
+                }
+            }
+        },
+        "preprocessing_options": {
+            "title": "Pre-processing (bcftools)",
+            "type": "object",
+            "fa_icon": "fas fa-filter",
+            "properties": {
+                "chunk_size": {
+                    "type": "integer",
+                    "default": 1000000,
+                    "minimum": 0,
+                    "description": "At most about this many records per chunk; 0 never splits a file."
+                },
+                "pass_only": {
+                    "type": "boolean",
+                    "description": "Keep FILTER=PASS records only."
+                },
+                "drop_genotypes": {
+                    "type": "boolean",
+                    "description": "Annotate sites only (drop FORMAT and sample columns)."
+                },
+                "min_ac": {
+                    "type": "integer",
+                    "default": 0,
+                    "minimum": 0,
+                    "description": "Drop alleles with AC below this after splitting multi-allelic sites (0 keeps all)."
+                },
+                "fasta_hg19": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "hg19 reference FASTA (with .fai): enables left-alignment of indels."
+                },
+                "fasta_hg38": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "hg38 reference FASTA (with .fai): enables left-alignment of indels."
+                },
+                "check_ref": {
+                    "type": "string",
+                    "default": "w",
+                    "pattern": "^[ewxs]+$",
+                    "description": "bcftools norm --check-ref when a FASTA is given: e (error), w (warn), x (exclude), s (set)."
+                }
+            }
+        },
+        "sample_options": {
+            "title": "Samples, families and genotype quality",
+            "type": "object",
+            "fa_icon": "fas fa-users",
+            "properties": {
+                "ped": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "PED file (or its CSV/TSV export) with families, sex and affected status: inheritance analysis and sex/relatedness checks."
+                },
+                "skip_sample_qc": {
+                    "type": "boolean",
+                    "description": "Skip the per-sample QC (sex check, relatedness)."
+                },
+                "family_max_samples": {
+                    "type": "integer",
+                    "default": 10,
+                    "minimum": 1,
+                    "description": "Files with at most this many samples get the family analysis and one report column per sample."
+                },
+                "gene_info": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show the diseases and modes of inheritance of every gene (GenCC) and its loss-of-function constraint (gnomAD LOEUF) in the report; the gene table is built in humandb on the first run (--auto_install_db) and refreshed by --mode update_db.",
+                    "fa_icon": "fas fa-dna"
+                },
+                "gene_panel": {
+                    "type": "string",
+                    "description": "Gene panel(s), comma-separated: text files with one gene symbol per line, or PanelApp TSV exports (green genes). The report shows variants in other genes only on request.",
+                    "fa_icon": "fas fa-list"
+                },
+                "qc_min_dp": {
+                    "type": "integer",
+                    "default": 10,
+                    "minimum": 0,
+                    "description": "Genotype flag LOW_DP below this read depth."
+                },
+                "qc_min_gq": {
+                    "type": "integer",
+                    "default": 10,
+                    "minimum": 0,
+                    "description": "Genotype flag LOW_GQ below this genotype quality."
+                },
+                "qc_min_alt_reads": {
+                    "type": "integer",
+                    "default": 4,
+                    "minimum": 0,
+                    "description": "Genotype flag LOW_ALT_READS: carriers with fewer reads supporting the alt allele."
+                },
+                "qc_het_vaf": {
+                    "type": "string",
+                    "default": "0.2,0.8",
+                    "pattern": "^(0|1|0?\\.[0-9]+),(0|1|0?\\.[0-9]+)$",
+                    "description": "Genotype flag VAF_SKEW: heterozygous alt-allele fraction outside MIN,MAX."
+                },
+                "qc_min_hom_vaf": {
+                    "type": "number",
+                    "default": 0.8,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Genotype flag VAF_SKEW: homozygous or hemizygous alt-allele fraction below this."
+                }
+            }
+        },
+        "output_options": {
+            "title": "Outputs",
+            "type": "object",
+            "fa_icon": "fas fa-file-export",
+            "properties": {
+                "compress_output": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "BGZF-compress the annotation tables."
+                },
+                "save_vcf": {
+                    "type": "boolean",
+                    "description": "Also write <id>.<build>_multianno.vcf.gz with its index."
+                },
+                "save_normalized": {
+                    "type": "boolean",
+                    "description": "Also publish the normalized per-chunk VCFs."
+                }
+            }
+        },
+        "resource_options": {
+            "title": "Resource limits",
+            "type": "object",
+            "fa_icon": "fas fa-server",
+            "description": "Ceilings for any single task; with the local executor also the capacity it schedules into. Default: the machine Nextflow runs on.",
+            "properties": {
+                "max_cpus": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Maximum CPUs (--threads above it is capped)."
+                },
+                "max_memory": {
+                    "type": "string",
+                    "pattern": "^\\d+(\\.\\d+)?\\.?\\s*(K|M|G|T)?B$",
+                    "description": "Maximum memory, e.g. '64.GB'."
+                },
+                "max_time": {
+                    "type": "string",
+                    "default": "240.h",
+                    "pattern": "^(\\d+\\.?\\s*(s|m|h|d|day)\\s*)+$",
+                    "description": "Maximum time per task, e.g. '240.h'."
+                }
+            }
+        },
+        "execution_options": {
+            "title": "Execution",
+            "type": "object",
+            "fa_icon": "fas fa-play",
+            "properties": {
+                "slurm_queue": {
+                    "type": "string",
+                    "description": "SLURM partition (with -profile slurm)."
+                },
+                "cluster_options": {
+                    "type": "string",
+                    "description": "Extra scheduler options (with -profile slurm)."
+                },
+                "container": {
+                    "type": "string",
+                    "default": "ghcr.io/assetdaniyarov/annovar-nf:0.1.0",
+                    "description": "Runtime image for -profile docker / singularity / apptainer (ANNOVAR is mounted, not bundled)."
+                },
+                "help": {
+                    "type": "boolean",
+                    "description": "Show the help message and exit.",
+                    "hidden": true
+                },
+                "monochrome_logs": {
+                    "type": "boolean",
+                    "description": "Plain, uncoloured log messages (e.g. when logging to a file).",
+                    "hidden": true
+                },
+                "trace_report_suffix": {
+                    "type": "string",
+                    "description": "Suffix of the execution report, timeline and trace file names (default: the start time).",
+                    "hidden": true
+                }
+            }
+        }
+    },
+    "allOf": [
+        { "$ref": "#/$defs/input_output_options" },
+        { "$ref": "#/$defs/genome_options" },
+        { "$ref": "#/$defs/annovar_options" },
+        { "$ref": "#/$defs/database_options" },
+        { "$ref": "#/$defs/preprocessing_options" },
+        { "$ref": "#/$defs/sample_options" },
+        { "$ref": "#/$defs/output_options" },
+        { "$ref": "#/$defs/resource_options" },
+        { "$ref": "#/$defs/execution_options" }
+    ]
+}

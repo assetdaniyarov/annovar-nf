@@ -1,0 +1,3 @@
+# The image only needs the conda environment; keep the build context small.
+*
+!environment.yml

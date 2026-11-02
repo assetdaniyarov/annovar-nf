@@ -1,0 +1,4 @@
+# family  sample  father  mother  sex  phenotype   (sex: 1 male, 2 female; phenotype: 2 affected, 1 unaffected)
+FAM1	S1	S3	S2	1	2
+FAM1	S2	0	0	2	1
+FAM1	S3	0	0	1	1

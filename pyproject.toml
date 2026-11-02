@@ -1,0 +1,18 @@
+# Tooling configuration for the helper scripts in bin/ (not a Python package).
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+include = ["bin/*.py", "tests/python/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["B905"]  # zip() without strict=: lengths are checked explicitly where it matters
+
+[tool.ruff.lint.per-file-ignores]
+# Embedded CSS/JS of the HTML report is kept readable as written, not wrapped.
+"bin/summarize_annotations.py" = ["E501"]

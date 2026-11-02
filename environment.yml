@@ -1,0 +1,17 @@
+# Software environment for every annovar-nf process (except ANNOVAR itself,
+# which is licensed and must be provided with --annovar_src).
+# Used by -profile conda / mamba and by the Dockerfile.
+name: annovar-nf
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - bioconda::bcftools=1.21
+  - bioconda::htslib=1.21
+  # bcftools 1.21 links libgsl.so.25 (GSL 2.7); its recipe also accepts GSL 2.7.1
+  # (libgsl.so.27), with which bcftools cannot start.
+  - conda-forge::gsl==2.7
+  - conda-forge::perl=5.32.1
+  - conda-forge::python=3.12
+  - conda-forge::gzip
+  - conda-forge::coreutils

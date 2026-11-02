@@ -1,0 +1,46 @@
+cff-version: 1.2.0
+message: "If you use annovar-nf, please cite it together with ANNOVAR, Nextflow and BCFtools."
+title: "annovar-nf: scalable ANNOVAR annotation of VCF/BCF files with Nextflow"
+version: 0.1.0
+date-released: 2026-11-01
+license: MIT
+repository-code: "https://github.com/assetdaniyarov/annovar-nf"
+authors:
+  - family-names: Daniyarov
+    given-names: Asset
+references:
+  - type: article
+    title: "ANNOVAR: functional annotation of genetic variants from high-throughput sequencing data"
+    authors:
+      - family-names: Wang
+        given-names: Kai
+      - family-names: Li
+        given-names: Mingyao
+      - family-names: Hakonarson
+        given-names: Hakon
+    journal: "Nucleic Acids Research"
+    year: 2010
+    volume: 38
+    issue: 16
+    start: e164
+    doi: 10.1093/nar/gkq603
+  - type: article
+    title: "Nextflow enables reproducible computational workflows"
+    authors:
+      - family-names: Di Tommaso
+        given-names: Paolo
+    journal: "Nature Biotechnology"
+    year: 2017
+    volume: 35
+    start: 316
+    doi: 10.1038/nbt.3820
+  - type: article
+    title: "Twelve years of SAMtools and BCFtools"
+    authors:
+      - family-names: Danecek
+        given-names: Petr
+    journal: "GigaScience"
+    year: 2021
+    volume: 10
+    issue: 2
+    doi: 10.1093/gigascience/giab008

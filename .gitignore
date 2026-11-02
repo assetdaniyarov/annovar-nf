@@ -1,0 +1,26 @@
+# Nextflow runtime
+work/
+.nextflow/
+.nextflow.log*
+.nextflow.pid
+results/
+results_*/
+null/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Never commit licensed ANNOVAR code or databases
+annovar/
+humandb/
+!tests/mock_annovar/humandb/

@@ -1,0 +1,6 @@
+## annovar-nf gene table, built 2026-11-01 (test fixture for the mock ANNOVAR genes)
+## GenCC gene-disease validity (CC0): made-up test data
+#gene	hgnc_id	name	moi	diseases	loeuf	pli	mis_z	previous
+GENE0	HGNC:1	test gene 0	AD	Test syndrome 0|AD|Definitive|2	0.12	1.00	4.00	.
+GENE2	HGNC:3	test gene 2	AR	Test syndrome 2|AR|Strong|1;Test syndrome 2b|AD|Limited|1	0.85	0.00	0.50	OLDGENE2
+GENE4	HGNC:5	test gene 4	.	.	1.20	.	-0.30	.

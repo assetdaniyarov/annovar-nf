@@ -1,0 +1,6 @@
+sample,vcf,genome
+single_hg38,single_hg38.hard-filtered.vcf,
+cohort_hg19,cohort_hg19_dragen.vcf.gz,auto
+nochr_unsorted,nochr_unsorted.vcf.gz,
+lifted_hg38,lifted_hg38.vcf,
+sites_only,sites_only_grch38.bcf,hg38

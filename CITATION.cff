@@ -4,6 +4,14 @@ title: "annovar-nf: scalable ANNOVAR annotation of VCF/BCF files with Nextflow"
 version: 0.1.0
 date-released: 2026-11-01
 license: MIT
+doi: 10.5281/zenodo.23880854
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.23880854
+    description: "All versions (resolves to the latest release)"
+  - type: doi
+    value: 10.5281/zenodo.23880855
+    description: "Version 0.1.0"
 repository-code: "https://github.com/assetdaniyarov/annovar-nf"
 authors:
   - family-names: Daniyarov

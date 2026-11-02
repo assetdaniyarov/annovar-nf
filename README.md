@@ -7,6 +7,7 @@
 [![run with conda](https://img.shields.io/badge/run%20with-conda-3EB049?logo=anaconda)](https://docs.conda.io/)
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?logo=docker)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23880854.svg)](https://doi.org/10.5281/zenodo.23880854)
 
 `annovar-nf` wraps [ANNOVAR](https://annovar.openbioinformatics.org/) `table_annovar.pl` in a Nextflow
 DSL2 pipeline that accepts the VCFs you actually have — single-sample DRAGEN `*.hard-filtered.vcf.gz`,
@@ -315,6 +316,10 @@ under "Cite this repository") together with ANNOVAR, Nextflow, BCFtools and the 
 protocol and of the gene table (e.g. ClinVar, gnomAD, InterVar, PubMind, GenCC; see
 [docs/databases.md](docs/databases.md)):
 
+- Daniyarov A. annovar-nf: scalable ANNOVAR annotation of VCF/BCF files with Nextflow. Zenodo.
+  [doi:10.5281/zenodo.23880854](https://doi.org/10.5281/zenodo.23880854) (all versions; the DOI of
+  each release is listed on the Zenodo page, e.g. 0.1.0:
+  [10.5281/zenodo.23880855](https://doi.org/10.5281/zenodo.23880855)).
 - Wang K, Li M, Hakonarson H. ANNOVAR: functional annotation of genetic variants from
   high-throughput sequencing data. *Nucleic Acids Res.* 2010;38(16):e164.
 - Di Tommaso P, et al. Nextflow enables reproducible computational workflows.

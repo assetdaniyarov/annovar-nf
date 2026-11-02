@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [0.1.0] - 2026-11-01
 
 ### Added
-- One code base for hg19 and hg38; requires Nextflow ≥ 26.04 (strict syntax).
+- One code base for hg19 and hg38; requires Nextflow ≥ 26.04.6 (strict syntax).
 - Input as samplesheet (CSV/TSV, optional `genome` column), directory (`--input_pattern`,
   `--recursive`), glob or single file; `.vcf`, `.vcf.gz` (BGZF or gzip), `.vcf.bgz`, `.gvcf.gz`, `.bcf`.
 - `PREPARE_VCF`: per-file genome-build detection (`##contig` lengths, header hints, file name) with

@@ -34,7 +34,7 @@ jobs:
           java-version: "21"
       - uses: nf-core/setup-nextflow@v2
         with:
-          version: "26.04.0"
+          version: "26.04.6"
       - run: nextflow lint .
 
   pipeline:
@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        nxf: ["26.04.0", "latest-stable"]
+        nxf: ["26.04.6", "latest-stable"]
         profile: ["test,conda"]
     steps:
       - uses: actions/checkout@v4
@@ -133,7 +133,7 @@ jobs:
           java-version: "21"
       - uses: nf-core/setup-nextflow@v2
         with:
-          version: "26.04.0"
+          version: "26.04.6"
       - name: Run pipeline with the mock ANNOVAR in the image
         run: nextflow run main.nf -profile test,docker --container annovar-nf:ci --outdir results_docker
       - name: Check outputs

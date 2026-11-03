@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- `--mode update_db` installs the 1000 Genomes packages (`.zip`, e.g. `1000g2014oct`) in the
+  container image: the archives are downloaded and unpacked by `annovar_db.py`, which needs neither
+  `wget` nor `unzip`.
+
 ## [0.1.1] - 2026-11-02
 
 ### Added

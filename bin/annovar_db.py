@@ -56,6 +56,7 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import wait as wait_futures
 from dataclasses import asdict, dataclass, field
@@ -284,8 +285,8 @@ def package_files(text: str, build: str, package: str) -> dict[str, int]:
     """
     Files of one ANNOVAR package listed in avdblist, with their sizes:
     '<build>_<package>.txt.gz' plus, when present, '.txt.idx.gz', 'Mrna.fa.gz'
-    and 'Version.txt.gz'. Empty when the package is not listed or ships as a
-    .zip (unpacked by annotate_variation.pl instead).
+    and 'Version.txt.gz'; for a package shipped as a .zip (1000 Genomes) that
+    archive alone. Empty when the package is not listed.
     """
     files = {}
     pattern = re.compile(rf"^{re.escape(build)}_{re.escape(package)}"
@@ -294,7 +295,10 @@ def package_files(text: str, build: str, package: str) -> dict[str, int]:
         parts = line.split("\t")
         if len(parts) >= 3 and pattern.match(parts[0]) and parts[2].strip().isdigit():
             files[parts[0]] = int(parts[2])
-    if any(name.endswith(".zip") for name in files) or f"{build}_{package}.txt.gz" not in files:
+    archive = f"{build}_{package}.zip"
+    if archive in files:
+        return {archive: files[archive]}
+    if f"{build}_{package}.txt.gz" not in files:
         return {}
     return files
 
@@ -575,8 +579,21 @@ def cmd_verify(args) -> int:
 # ======================================================================================
 # download
 # ======================================================================================
+def unpack_zip(archive: Path, staging: Path, build: str) -> None:
+    """Unpack the tables of an ANNOVAR .zip package, adding the '<build>_' prefix where it is missing."""
+    with zipfile.ZipFile(archive) as zf:
+        for info in zf.infolist():
+            name = Path(info.filename).name
+            if info.is_dir() or not name:
+                continue
+            if not name.startswith(f"{build}_"):
+                name = f"{build}_{name}"
+            with zf.open(info) as src, open(staging / name, "wb") as out:
+                shutil.copyfileobj(src, out, 1 << 24)
+
+
 def fetch_package(staging: Path, files: dict[str, int]) -> bool:
-    """Download (resumable, size-checked) and unpack the .gz files of one package."""
+    """Download (resumable, size-checked) and unpack the .gz or .zip files of one package."""
     for name, size in sorted(files.items(), key=lambda item: item[1]):
         log(f"  {name}: {size / 1e6:,.0f} MB")
         try:
@@ -589,9 +606,12 @@ def fetch_package(staging: Path, files: dict[str, int]) -> bool:
     for name in files:
         archive = staging / name
         try:
-            with gzip.open(archive, "rb") as src, open(staging / name[:-3], "wb") as out:
-                shutil.copyfileobj(src, out, 1 << 24)
-        except (OSError, EOFError) as exc:
+            if name.endswith(".zip"):
+                unpack_zip(archive, staging, name.split("_", 1)[0])
+            else:
+                with gzip.open(archive, "rb") as src, open(staging / name[:-3], "wb") as out:
+                    shutil.copyfileobj(src, out, 1 << 24)
+        except (OSError, EOFError, zipfile.BadZipFile) as exc:
             log(paint(f"  {name}: corrupt archive ({exc}); deleted, rerun to download it again", "31"))
             archive.unlink(missing_ok=True)
             return False

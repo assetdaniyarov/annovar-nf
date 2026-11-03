@@ -1,5 +1,6 @@
 """Tests for bin/annovar_db.py (no network access)."""
 
+import shutil
 from pathlib import Path
 
 import pytest
@@ -199,7 +200,7 @@ def test_package_files():
                                                               "hg19_dbnsfp47a.txt.idx.gz": 20}
     assert set(db.package_files(listing, "hg19", "refGene")) == {
         "hg19_refGene.txt.gz", "hg19_refGeneMrna.fa.gz", "hg19_refGeneVersion.txt.gz"}
-    assert db.package_files(listing, "hg19", "1000g2015aug") == {}     # .zip: annotate_variation.pl
+    assert db.package_files(listing, "hg19", "1000g2015aug") == {"hg19_1000g2015aug.zip": 9}
     assert db.package_files(listing, "hg19", "nope") == {}
 
 
@@ -271,6 +272,22 @@ def test_install_package_keeps_partial_archive(tmp_path, monkeypatch):
     assert (staging / "hg19_dbnsfp47a.txt.gz").read_bytes() == b"partial"
 
 
+def test_fetch_package_unpacks_zip(tmp_path, monkeypatch):
+    """1000 Genomes ship as .zip: unpacked in Python (no wget/unzip needed), '<build>_' prefix added."""
+    src = tmp_path / "src.zip"
+    with db.zipfile.ZipFile(src, "w") as zf:
+        zf.writestr("hg38_ALL.sites.2014_10.txt", "1\t1\t1\tA\tG\t0.1\n")
+        zf.writestr("hg38_ALL.sites.2014_10.txt.idx", "#BIN\t1000\n")
+        zf.writestr("EUR.sites.2014_10.txt", "1\t1\t1\tA\tG\t0.2\n")
+    monkeypatch.setattr(db, "download_parallel", lambda url, dest, size: shutil.copy(src, dest))
+    staging = tmp_path / "staging"
+    staging.mkdir()
+    assert db.fetch_package(staging, {"hg38_1000g2014oct.zip": src.stat().st_size})
+    assert sorted(p.name for p in staging.iterdir()) == [
+        "hg38_1000g2014oct.zip", "hg38_ALL.sites.2014_10.txt", "hg38_ALL.sites.2014_10.txt.idx",
+        "hg38_EUR.sites.2014_10.txt"]
+
+
 def test_download_parallel_joins_ranges(tmp_path, monkeypatch):
     data = bytes(range(256)) * 40
 
@@ -313,7 +330,7 @@ def test_install_missing(tmp_path, monkeypatch):
     failed = db.install_missing(tmp_path, "hg38", entries, tmp_path, clinvar_release="20261025")
     assert failed == ["my_lab_db"]
     assert sorted(installed, key=lambda p: p[0]) == [
-        ("1000g2015aug", None),                       # .zip: annotate_variation.pl, one package for both tables
+        ("1000g2015aug", {"hg38_1000g2015aug.zip": 2000}),   # one package for both tables
         ("pubmind_db_v111", {"hg38_pubmind_db_v111.txt.gz": 1000, "hg38_pubmind_db_v111.txt.idx.gz": 10})]
     assert clinvar == ["20261025"]
 

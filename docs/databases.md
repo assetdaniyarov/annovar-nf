@@ -99,12 +99,12 @@ never overwritten unless the audit marked them as damaged. Parallel downloads of
 
 The ANNOVAR server throttles every connection to well under 1 MB/s, and `annotate_variation.pl`
 gives up after a single 30-second stall, which makes large packages (hg19 `dbnsfp47a` is 22 GB)
-practically impossible to fetch with it. Packages listed in the ANNOVAR `avdblist` as `.gz` files are
-therefore downloaded by `annovar_db.py` itself: 32 MB byte ranges over 8 parallel connections, each
-retried and resumed, with the size checked against the listing. Downloaded parts stay in the staging
-directory when something fails, so rerunning `--mode update_db` (with or without `-resume`)
-continues where it stopped. Packages shipped as `.zip` (1000 Genomes) are installed with
-`annotate_variation.pl`.
+practically impossible to fetch with it. Packages listed in the ANNOVAR `avdblist` (`.gz` files, and
+the `.zip` archives of 1000 Genomes) are therefore downloaded and unpacked by `annovar_db.py`
+itself, without `wget` or `unzip`: 32 MB byte ranges over 8 parallel connections, each retried and
+resumed, with the size checked against the listing. Downloaded parts stay in the staging directory
+when something fails, so rerunning `--mode update_db` (with or without `-resume`) continues where it
+stopped. Packages missing from the listing are tried with `annotate_variation.pl`.
 
 Protocol names that come from a differently named package are mapped automatically
 (`ALL.sites.2015_08`, `EUR.sites.2015_08`, ... → `1000g2015aug`).

@@ -268,8 +268,19 @@ def test_install_package_keeps_partial_archive(tmp_path, monkeypatch):
     (staging / "hg19_dbnsfp47a.txt").write_text("stale unpacked table")
     files = {"hg19_dbnsfp47a.txt.gz": 100}
     assert not db.install_package(tmp_path, "hg19", "dbnsfp47a", tmp_path, False, files)
-    assert calls == [["hg19_dbnsfp47a.txt.gz"]]                 # stale table dropped, archive kept
+    assert calls == [[db.LOCK_NAME, "hg19_dbnsfp47a.txt.gz"]]   # stale table dropped, archive kept
     assert (staging / "hg19_dbnsfp47a.txt.gz").read_bytes() == b"partial"
+
+
+def test_install_package_locked(tmp_path, monkeypatch):
+    """A second process never writes into a staging dir another one is downloading into."""
+    monkeypatch.setattr(db, "fetch_package", lambda staging, files: pytest.fail("downloaded twice"))
+    staging = tmp_path / ".annovar-nf-staging.hg38_1000g2014oct"
+    staging.mkdir()
+    with open(staging / db.LOCK_NAME, "w") as held:
+        db.fcntl.flock(held, db.fcntl.LOCK_EX)
+        assert not db.install_package(tmp_path, "hg38", "1000g2014oct", tmp_path, False,
+                                      {"hg38_1000g2014oct.zip": 10})
 
 
 def test_fetch_package_unpacks_zip(tmp_path, monkeypatch):

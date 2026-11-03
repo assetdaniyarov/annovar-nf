@@ -43,6 +43,7 @@ Only the Python standard library is used.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import gzip
 import hashlib
 import http.client
@@ -65,6 +66,7 @@ from pathlib import Path
 import gene_info
 
 ANNOVAR_DOWNLOAD = "http://www.openbioinformatics.org/annovar/download"
+LOCK_NAME = ".lock"                 # in a staging dir: held while a process downloads into it
 # Databases ANNOVAR announces as released: the table of the download page
 # (annovar.openbioinformatics.org/en/latest/user-guide/download/), read from its
 # source in the documentation repository. avdblist also lists unannounced or
@@ -637,13 +639,26 @@ def install_package(humandb: Path, build: str, package: str, annovar_src: Path, 
     Download one ANNOVAR package into a staging dir, verify, then move it into
     humandb. The staging dir keeps downloaded archives when something fails,
     so the next run resumes instead of starting over; it is removed on success.
+    A lock keeps two processes from writing into the same staging dir.
     """
     staging = humandb / f".annovar-nf-staging.{build}_{package}"
     staging.mkdir(exist_ok=True)
+    with open(staging / LOCK_NAME, "w") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            log(paint(f"{build}_{package}: another process is downloading this package; "
+                      "rerun when it has finished", "31"))
+            return False
+        return install_staged(staging, humandb, build, package, annovar_src, force, files)
+
+
+def install_staged(staging: Path, humandb: Path, build: str, package: str, annovar_src: Path, force: bool,
+                   files: dict[str, int] | None) -> bool:
     for p in staging.iterdir():     # keep (partial) archives, drop anything unpacked
         if p.is_dir():
             shutil.rmtree(p)
-        elif not (files and p.name.split(".part")[0] in files):
+        elif p.name != LOCK_NAME and not (files and p.name.split(".part")[0] in files):
             p.unlink()
 
     log(f"{build}_{package}: downloading" + (" (via annotate_variation.pl)" if not files else ""))

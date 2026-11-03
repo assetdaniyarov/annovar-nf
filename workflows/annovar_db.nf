@@ -43,11 +43,13 @@ workflow ANNOVAR_DB {
                 tsv.splitCsv(header: true, sep: '\t')
             }
 
-        // Official databases: install missing ones, replace damaged ones.
+        // Official databases: install missing ones, replace damaged ones. Tables of one
+        // package (ALL/EUR/... .sites from a 1000 Genomes .zip) are downloaded once.
         ch_download = ch_rows
             .filter { row -> row.action in ['download', 'redownload'] }
-            .map { row -> [row.build, row.database, row.action == 'redownload'] }
-            .unique { row -> "${row[0]}:${row[1]}" }
+            .map { row -> [row.build, row.database, row.action == 'redownload', row.package ?: row.database] }
+            .unique { row -> "${row[0]}:${row[3]}" }
+            .map { build, database, force, _package -> [build, database, force] }
 
         DB_DOWNLOAD(ch_download, file(params.annovar_db), file(params.annovar_src))
 

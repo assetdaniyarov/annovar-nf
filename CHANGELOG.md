@@ -10,6 +10,9 @@ All notable changes to this project are documented here. The format follows
 - `--mode update_db` installs the 1000 Genomes packages (`.zip`, e.g. `1000g2014oct`) in the
   container image: the archives are downloaded and unpacked by `annovar_db.py`, which needs neither
   `wget` nor `unzip`.
+- `--mode update_db` downloads a package once when several protocol tables come from it
+  (`ALL.sites.2014_10`, `EUR.sites.2014_10`, ...); a staging directory is locked while a process
+  downloads into it.
 
 ## [0.1.1] - 2026-11-02
 

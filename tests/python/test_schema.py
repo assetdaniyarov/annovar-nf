@@ -44,4 +44,4 @@ def test_one_version_everywhere():
     assert config_params()["container"].strip("'") == f"ghcr.io/assetdaniyarov/annovar-nf:{version}"
     assert f"version: {version}\n" in (ROOT / "CITATION.cff").read_text(encoding="utf-8")
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-    assert re.search(r"^## \[([^\]]+)\]", changelog, re.M).group(1) == version
+    assert re.search(r"^## \[(?!Unreleased\])([^\]]+)\]", changelog, re.M).group(1) == version

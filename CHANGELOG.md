@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Report variant tables: `rsID · position` has its own column before `change · consequence`, which
+  has a fixed width, so the rsID, HGVS change, consequence and transcript stay visible.
+
 ### Fixed
 - `--mode update_db` installs the 1000 Genomes packages (`.zip`, e.g. `1000g2014oct`) in the
   container image: the archives are downloaded and unpacked by `annovar_db.py`, which needs neither

@@ -204,8 +204,8 @@ such records with FILTER `TargetedWT` / `TargetedLowVQL` — are counted
 | VUS | ClinVar `Uncertain_significance` and `Conflicting_classifications_of_pathogenicity`, exonic or splicing, gnomAD frequency below 1 % in every population (or absent) |
 
 Columns of the HTML tables: source (P/LP) and inheritance model; gene (see Gene information
-below); HGVS change, consequence, transcript, VCF coordinates and the dbSNP rsID linked to dbSNP (a
-non-PASS FILTER highlighted);
+below); dbSNP rsID linked to dbSNP, with the VCF coordinates under it; HGVS change, with the
+consequence and transcript under it (a non-PASS FILTER highlighted);
 genotype calls (see Report layout and Genotype quality); ClinVar significance with review stars
 (0–4); condition (ClinVar), with the GenCC diseases of the gene below it; InterVar call with the triggered ACMG criteria; PubMind (hg38, when
 `pubmind_db_*` is in the protocol): the pathogenicity reported in the literature, the paper-level

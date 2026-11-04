@@ -480,7 +480,8 @@ def test_family_report_layout(summarize, tmp_path):
     assert "class='conf-high doubtful'" in page and "show 1 doubtful" in page
     assert "homozygous (AR)</span></div><div class='muted small' title='K1, K2 · father het'>" in page
     # HGVS and Sequence Ontology words; heteroplasmy on chrM
-    assert "c.5G&gt;A p.(Arg2His)" in page and "missense · NM_1 · chr2-10-C-T" in page
+    assert "c.5G&gt;A p.(Arg2His)" in page and "missense · NM_1</div>" in page and ">chr2-10-C-T</div>" in page
+    assert page.index("rsID · position") < page.index("change · consequence")
     assert "heteroplasmy" in page and "4% · 1026×" in page
     cand = (tmp_path / "F.s_candidates.tsv").read_text(encoding="utf-8").splitlines()
     head = cand[0].split("\t")

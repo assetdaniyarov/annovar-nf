@@ -650,9 +650,9 @@ def rsids(v: dict) -> list[str]:
 
 
 def rsid_html(v: dict) -> str:
-    """The rsIDs, linked to dbSNP, for the line under a variant's change."""
-    return "".join(f" · <a href='https://www.ncbi.nlm.nih.gov/snp/{r}' target='_blank' rel='noopener'>{r}</a>"
-                   for r in rsids(v))
+    """The rsIDs of a variant, linked to dbSNP."""
+    return " · ".join(f"<a href='https://www.ncbi.nlm.nih.gov/snp/{r}' target='_blank' rel='noopener'>{r}</a>"
+                      for r in rsids(v))
 
 
 def variant_links(v: dict, genome: str) -> list[list[str]]:
@@ -762,9 +762,9 @@ MODEL_LABELS = {"homozygous (AR)": "homozygous (AR)", "X-linked (hemizygous)": "
                 "compound heterozygous": "compound het", "possible compound heterozygous": "compound het (possible)",
                 "dominant (affected parent)": "dominant (parent)", "de novo": "de novo"}
 # Variant tables: one column set for P/LP, candidates and VUS, with the same
-# widths (px) in every table; 'change' and 'condition' share the rest of the
-# page and get at least FLEX_MIN each (narrower windows scroll the table).
-COLUMN_WIDTHS = {"file": 150, "lead": 150, "gene": 104, "genotype": 168, "member": 112, "carriers": 190,
+# widths (px) in every table; 'condition' takes the rest of the page and gets
+# at least FLEX_MIN (narrower windows scroll the table).
+COLUMN_WIDTHS = {"file": 150, "lead": 150, "gene": 104, "rsID": 140, "change": 250, "genotype": 168, "member": 112, "carriers": 190,
                  "ClinVar": 112, "InterVar · ACMG": 112, "PubMind": 104, "gnomAD AF": 76, "REVEL": 58, "CADD": 54,
                  "AlphaMissense": 98}
 NUMERIC_COLUMNS = ("gnomAD AF", "REVEL", "CADD")
@@ -948,7 +948,7 @@ def variant_table(variants: list[dict], table_id: str, kind: str, view: View) ->
     """
     lead_head = {"plp": "source · model", "vus": "inheritance", "candidates": "model"}[kind]
     heads = (([("file", "file")] if view.show_file else []) + [(lead_head, "lead"), ("gene", "gene"),
-             ("change · consequence", None)] + genotype_head(view)
+             ("rsID · position", "rsID"), ("change · consequence", "change")] + genotype_head(view)
              + [("ClinVar", "ClinVar"), ("condition", None), ("InterVar · ACMG", "InterVar · ACMG")]
              + ([("<span title='PubMind: pathogenicity reported in the literature, extracted by a language "
                   "model; paper-level score 0 (benign) to 1 (pathogenic), evidence confidence 0 to 3'>PubMind</span>",
@@ -966,9 +966,7 @@ def variant_table(variants: list[dict], table_id: str, kind: str, view: View) ->
         stars = "★" * v["stars"] + "☆" * (4 - v["stars"]) if v.get("clnsig") not in (".", "") else ""
         filt = v.get("filter", ".")
         hgvs_text = " ".join(x for x in (v.get("hgvs_c"), v.get("hgvs_p")) if x not in (None, ".", ""))
-        main = hgvs_text or v.get("vcf", "")
-        where = [consequence(v)] + [x for x in (v.get("transcript"),) if x not in (None, ".", "")] \
-            + ([v.get("vcf", "")] if hgvs_text else [])
+        where = [consequence(v)] + [x for x in (v.get("transcript"),) if x not in (None, ".", "")]
         filter_chip = f"<span class='flag'>{esc(filt)}</span> " if filt not in ("PASS", ".") else ""
         acmg = v.get("acmg", ".")
         if kind == "candidates":
@@ -985,9 +983,11 @@ def variant_table(variants: list[dict], table_id: str, kind: str, view: View) ->
             + (f"<td title='{esc(v['file'])}'>{esc(v['file'])}</td>" if view.show_file else "")
             + f"<td>{lead}</td>"
             + gene_cell(v, view)
-            + f"<td><div class='mono' title='{esc(tx_title or main)}'>{esc(main)}</div>"
-              f"<div class='muted small' title='{esc(' · '.join(where + rsids(v) + [f'FILTER {filt}']))}'>"
-              f"{filter_chip}{esc(' · '.join(where))}{rsid_html(v)}</div></td>"
+            + f"<td><div class='mono' title='{esc(' · '.join(rsids(v)))}'>{rsid_html(v) or '.'}</div>"
+              f"<div class='muted small' title='{esc(v.get('vcf', ''))}'>{esc(v.get('vcf', ''))}</div></td>"
+            + f"<td><div class='mono' title='{esc(tx_title or '.')}'>{esc(hgvs_text or '.')}</div>"
+              f"<div class='muted small' title='{esc(' · '.join(where + [f'FILTER {filt}']))}'>"
+              f"{filter_chip}{esc(' · '.join(where))}</div></td>"
             + genotype_cells(v, view)
             + f"<td>{sig_badge(v.get('clnsig', '.'))}<div class='stars' title='{esc(v.get('clnrevstat', ''))}'>"
               f"{stars}</div></td>"
@@ -1009,7 +1009,7 @@ def variant_table(variants: list[dict], table_id: str, kind: str, view: View) ->
     return (f'<div class="toolbar"><input class="filter" data-table="{table_id}" type="search" '
             f'placeholder="Filter by gene, sample, condition, flag ..." aria-label="Filter variants">{toggle}</div>'
             f'<div class="wrap"><table id="{table_id}" class="sortable variants hide-doubtful hide-offpanel" '
-            f'style="min-width:{fixed + 2 * FLEX_MIN}px"><colgroup>{cols}</colgroup>'
+            f'style="min-width:{fixed + FLEX_MIN}px"><colgroup>{cols}</colgroup>'
             f'{thead([h for h, _ in heads], [h for h, w in heads if w in NUMERIC_COLUMNS])}'
             f'<tbody>{"".join(rows)}</tbody></table></div>{more}')
 
@@ -1307,6 +1307,7 @@ table.variants th { font-size:12px; }
 table.variants td > div, table.variants .call { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 table.variants .gene { font-weight:650; }
 table.variants .mono { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; }
+table.variants .mono a { color:var(--accent); text-decoration:none; }
 table.variants .qfs { white-space:normal; line-height:1.3; }
 table.hide-doubtful tr.doubtful { display:none; }
 tr.doubtful > td { opacity:.7; }
